@@ -1,9 +1,8 @@
 name: Uji & deploy web
 
+# Hanya dijalankan manual (tab Actions › Run workflow). Aplikasi utama dilayani oleh Apps Script;
+# GitHub Pages opsional. Untuk otomatis lagi, tambahkan:  push: { branches: [main] }
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -27,7 +26,7 @@ jobs:
           git diff --exit-code apps-script/Engine.gs || (echo "Jalankan: node scripts/sync-engine.js lalu commit" && exit 1)
 
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-latest
     environment:

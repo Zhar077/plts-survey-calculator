@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kalkulator Survey PLTS</title>
   <meta name="description" content="Analisis cepat PLTS atap on-grid residensial: sizing, layout, inverter, kabel, produksi, ekonomi.">
-  <link rel="stylesheet" href="style.css?v=1.0.1">
+  <link rel="stylesheet" href="style.css?v=1.0.2">
 </head>
 <body>
   <header class="top">
@@ -60,20 +60,20 @@
   <dialog id="dlgSettings">
     <form method="dialog" class="dlg">
       <h2>Pengaturan</h2>
-      <label>URL Web App Apps Script
+      <label class="ext-only">URL Web App Apps Script
         <input id="setUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec">
       </label>
-      <label>Token API (opsional)
+      <label class="ext-only">Token API (opsional)
         <input id="setToken" type="password" placeholder="Sama dengan Script property API_TOKEN">
       </label>
       <label>Nama surveyor
         <input id="setSurveyor" type="text">
       </label>
-      <p class="hint">Tanpa URL, aplikasi berjalan offline dengan konfigurasi default dan katalog <b>fixture fiktif</b> dari PRD.</p>
+      <p class="hint ext-only">Tanpa URL, aplikasi berjalan offline dengan konfigurasi default dan katalog <b>fixture fiktif</b> dari PRD.</p>
       <div class="actions">
         <button value="cancel" class="ghost">Batal</button>
         <span class="grow"></span>
-        <button value="test" id="btnTest" class="secondary" type="button">Tes koneksi</button>
+        <button value="test" id="btnTest" class="secondary ext-only" type="button">Tes koneksi</button>
         <button value="ok" class="primary">Simpan</button>
       </div>
       <p id="testOut" class="hint"></p>
@@ -82,7 +82,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="engine.js?v=1.0.1"></script>
-  <script src="app.js?v=1.0.1"></script>
+  <script src="engine.js?v=1.0.2"></script>
+  <script src="app.js?v=1.0.2"></script>
 </body>
 </html>

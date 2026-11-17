@@ -3,7 +3,8 @@
  *
  * Deploy: Deploy > New deployment > Web app
  *   Execute as: Me   |   Who has access: Anyone
- * Salin URL /exec ke pengaturan web (ikon ⚙).
+ * Buka URL /exec langsung: aplikasi web tampil (dilayani dari Index.html).
+ * Versi web di luar Google (mis. GitHub Pages) memakai URL yang sama sebagai API.
  *
  * Endpoint
  *   GET  ?action=context[&token=]           -> config + katalog + versi
@@ -28,29 +29,48 @@ var SURVEY_HEADERS = ['id', 'revisi_dari', 'tanggal_simpan', 'surveyor', 'nama_p
   'n_panel', 'e_pv_tahun0_kwh', 'capex', 'hemat_th1', 'payback_th', 'npv', 'irr', 'config_version', 'engine_version', 'input_json', 'result_json'];
 
 function doGet(e) {
-  return handle_(function () {
-    var p = (e && e.parameter) || {};
-    checkToken_(p.token);
-    switch (p.action || 'context') {
-      case 'context': return loadContext_();
-      case 'list': return listSurveys_();
-      case 'get': return getSurvey_(p.id);
-      case 'ping': return { ok: true, time: new Date().toISOString() };
-      default: throw new Error('action tidak dikenal: ' + p.action);
-    }
-  });
+  var p = (e && e.parameter) || {};
+  // Tanpa ?action: tampilkan aplikasi web (file Index.html di proyek Apps Script).
+  if (!p.action) {
+    return HtmlService.createHtmlOutputFromFile('Index')
+      .setTitle('Kalkulator Survey PLTS')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+  return handle_(function () { checkToken_(p.token); return routeGet_(p); });
 }
 
 function doPost(e) {
   return handle_(function () {
     var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     checkToken_(body.token);
-    var ctx = loadContext_();
-    if (body.action === 'calculate') return { result: PLTS.calculate(body.input, ctx) };
-    if (body.action === 'save') return saveSurvey_(body.input, ctx, body.id, body.surveyor);
-    throw new Error('action tidak dikenal: ' + body.action);
+    return routePost_(body);
   });
 }
+
+function routeGet_(p) {
+  switch (p.action) {
+    case 'context': return loadContext_();
+    case 'list': return listSurveys_();
+    case 'get': return getSurvey_(p.id);
+    case 'ping': return { ok: true, time: new Date().toISOString() };
+    default: throw new Error('action tidak dikenal: ' + p.action);
+  }
+}
+
+function routePost_(body) {
+  var ctx = loadContext_();
+  if (body.action === 'calculate') return { result: PLTS.calculate(body.input, ctx) };
+  if (body.action === 'save') return saveSurvey_(body.input, ctx, body.id, body.surveyor);
+  throw new Error('action tidak dikenal: ' + body.action);
+}
+
+/**
+ * Dipanggil dari halaman yang dilayani Apps Script lewat google.script.run.
+ * Akses dijaga oleh URL web app itu sendiri, jadi token tidak diperiksa di sini.
+ * Hasil dikirim sebagai string JSON supaya tipe data aman melewati google.script.run.
+ */
+function apiGet(p) { return JSON.stringify(routeGet_(p || {})); }
+function apiPost(body) { return JSON.stringify(routePost_(body || {})); }
 
 function handle_(fn) {
   var out;

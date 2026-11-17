@@ -21,12 +21,25 @@
   function toast(msg, ms) { var t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('show'); }, ms || 2800); }
 
   // ---------------------------------------------------------------- API
+  // GAS = halaman dibuka dari URL /exec Apps Script: panggil server lewat google.script.run.
+  // Selain itu (GitHub Pages, lokal): fetch ke URL /exec yang diatur di ⚙.
+  var GAS = !!(window.google && google.script && google.script.run);
+  function connected() { return GAS || !!S.url; }
+  function gasCall(fn, arg) {
+    return new Promise(function (resolve, reject) {
+      google.script.run
+        .withSuccessHandler(function (txt) { try { resolve(JSON.parse(txt)); } catch (e) { reject(e); } })
+        .withFailureHandler(function (err) { reject(new Error(err && err.message ? err.message : String(err))); })[fn](arg);
+    });
+  }
   var API = {
     get: function (action, params) {
+      if (GAS) return gasCall('apiGet', Object.assign({ action: action }, params || {}));
       var q = new URLSearchParams(Object.assign({ action: action, token: S.token }, params || {}));
       return fetch(S.url + '?' + q.toString(), { redirect: 'follow' }).then(API.parse);
     },
     post: function (body) {
+      if (GAS) return gasCall('apiPost', body);
       body.token = S.token;
       return fetch(S.url, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) }).then(API.parse);
     },
@@ -47,7 +60,7 @@
   function initContext() {
     var cached = load('ctx', null);
     S.ctx = cached || {};
-    if (!S.url) { setConn(false, 'offline · fixture'); showBanner(); return Promise.resolve(); }
+    if (!connected()) { setConn(false, 'offline · fixture'); showBanner(); return Promise.resolve(); }
     setConn(false, 'menghubungkan…');
     return API.get('context').then(function (ctx) {
       S.ctx = ctx; save('ctx', ctx); setConn(true, 'Sheet · ' + ctx.configVersion); showBanner();
@@ -57,7 +70,7 @@
   }
   function showBanner(err) {
     var b = $('#banner'), msg = '';
-    if (!S.url) msg = 'Mode offline: konfigurasi default dan katalog <b>fixture fiktif</b> dari PRD. Hubungkan Google Sheet di ⚙ untuk katalog nyata dan penyimpanan.';
+    if (!connected()) msg = 'Mode offline: konfigurasi default dan katalog <b>fixture fiktif</b> dari PRD. Hubungkan Google Sheet di ⚙ untuk katalog nyata dan penyimpanan.';
     else if (err) msg = 'Tidak bisa memuat konfigurasi dari Sheet (' + esc(err) + '). ' + (load('ctx', null) ? 'Memakai cache terakhir.' : 'Memakai default bawaan.');
     b.innerHTML = msg; b.classList.toggle('hidden', !msg);
   }
@@ -236,7 +249,7 @@
     switchTab('hasil');
   }
   function calcSave() {
-    if (!S.url) { toast('Belum terhubung ke Sheet. Atur URL di ⚙'); return; }
+    if (!connected()) { toast('Belum terhubung ke Sheet. Atur URL di ⚙'); return; }
     var inp = readForm(), btn = $('#btnSave');
     btn.disabled = true; btn.textContent = 'Menyimpan…';
     API.post({ action: 'save', input: inp, id: S.editingId, surveyor: S.surveyor }).then(function (d) {
@@ -383,7 +396,7 @@
 
   // ---------------------------------------------------------------- daftar
   function loadList() {
-    if (!S.url) return;
+    if (!connected()) return;
     $('#list').innerHTML = '<p class="empty">Memuat…</p>';
     API.get('list').then(function (rows) { S.list = rows; renderList(); })
       .catch(function (e) { $('#list').innerHTML = '<p class="empty">Gagal memuat: ' + esc(e.message) + '</p>'; });
@@ -416,7 +429,7 @@
   function switchTab(t) {
     $$('.tabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === t); });
     $$('.tab').forEach(function (s) { s.classList.toggle('active', s.id === 'tab-' + t); });
-    if (t === 'daftar' && S.url && !S.list.length) loadList();
+    if (t === 'daftar' && connected() && !S.list.length) loadList();
     window.scrollTo(0, 0);
   }
   function debounce(fn, ms) { var h; return function () { clearTimeout(h); var a = arguments; h = setTimeout(function () { fn.apply(null, a); }, ms); }; }
@@ -440,6 +453,7 @@
     $('#q').addEventListener('input', renderList);
     var dlg = $('#dlgSettings');
     $('#btnSettings').addEventListener('click', function () {
+      $$('.ext-only').forEach(function (el) { el.classList.toggle('hidden', GAS); });
       $('#setUrl').value = S.url; $('#setToken').value = S.token; $('#setSurveyor').value = S.surveyor; $('#testOut').textContent = '';
       dlg.showModal();
     });

@@ -5,12 +5,14 @@ sizing dari tagihan, layout panel per bidang atap, pemilihan inverter dan string
 rules engine (PASS / WARN / BLOCKER), sensitivitas, dan BoQ indikatif.
 
 ```
- ┌──────────────────────┐   fetch (GET/POST)    ┌───────────────────────┐   baca/tulis   ┌──────────────────────┐
- │ Web statis           │ ────────────────────▶ │ Apps Script Web App   │ ─────────────▶ │ Google Sheet         │
- │ GitHub Pages (web/)  │ ◀──────────────────── │ Code.gs + Engine.gs   │ ◀───────────── │ Config, katalog,     │
- │ engine.js (preview)  │      JSON             │ (hitung ulang + simpan)│                │ Survey, RuleLog      │
+ ┌──────────────────────┐  google.script.run    ┌───────────────────────┐   baca/tulis   ┌──────────────────────┐
+ │ Aplikasi web         │ ────────────────────▶ │ Apps Script Web App   │ ─────────────▶ │ Google Sheet         │
+ │ (Index.html, dibuka  │ ◀──────────────────── │ Code.gs               │ ◀───────────── │ Config, katalog,     │
+ │  dari URL /exec)     │      JSON             │ (hitung ulang + simpan)│                │ Survey, RuleLog      │
  └──────────────────────┘                       └───────────────────────┘                └──────────────────────┘
 ```
+
+Semua gratis: cukup akun Google. GitHub hanya menyimpan kode. Hosting di GitHub Pages opsional (lihat bagian akhir).
 
 - **Satu engine**: `web/engine.js` berisi semua rumus. `apps-script/Engine.gs` adalah salinan identiknya
   (`node scripts/sync-engine.js`). Browser menghitung instan untuk preview; saat disimpan, server menghitung ulang
@@ -25,21 +27,34 @@ rules engine (PASS / WARN / BLOCKER), sensitivitas, dan BoQ indikatif.
 | Path | Isi |
 |---|---|
 | `web/` | Situs statis: `index.html`, `app.js` (UI), `engine.js` (rumus), `style.css` |
-| `apps-script/` | `Code.gs` (API), `Setup.gs` (membuat sheet), `Engine.gs` (salinan engine), `appsscript.json` |
+| `apps-script/` | Sumber server: `Code.gs` (API + halaman), `Setup.gs` (membuat sheet), `Engine.gs` (salinan engine) |
+| `deploy/` | **2 file siap tempel** ke Apps Script: `Code.gs` (semua kode server) dan `Index.html` (aplikasi web). Dibuat oleh `npm run build` |
 | `tests/run-tests.js` | Kasus uji PRD bagian 11 (TC-01 s/d TC-07) — 178 cek |
 | `reference/plts_ref.py` | Implementasi referensi Python |
 | `.github/workflows/ci-pages.yml` | Jalankan uji, cek Engine.gs sinkron, deploy `web/` ke GitHub Pages |
 
 ## Setup
 
-### 1. Google Sheet + Apps Script
+### 1. Google Sheet + Apps Script (gratis)
 
-1. Buat Google Sheet baru → **Extensions › Apps Script**.
-2. Buat file `Code`, `Setup`, `Engine` lalu tempel isi `apps-script/Code.gs`, `Setup.gs`, `Engine.gs`.
-   Di **Project Settings** centang *Show "appsscript.json"* dan tempel `apps-script/appsscript.json`.
-   (Alternatif: `npm i -g @google/clasp`, `clasp clone <scriptId>` ke folder `apps-script/`, lalu `clasp push`.)
-3. Jalankan fungsi `setupSheets` sekali (izinkan akses). Muat ulang Sheet; menu **PLTS** muncul.
-4. Isi sheet:
+1. Buka https://sheets.new → beri nama, misalnya *PLTS Survey*.
+2. **Extensions › Apps Script**. Di file `Code.gs`, hapus isinya lalu tempel seluruh isi `deploy/Code.gs`. Simpan (Ctrl+S).
+3. Klik **+** di samping *Files* › **HTML**, beri nama `Index` (tanpa `.html`). Hapus isinya, tempel `deploy/Index.html`. Simpan.
+4. Di toolbar pilih fungsi `setupSheets` › **Run**. Izinkan akses (*Advanced › Go to … (unsafe)* wajar untuk skrip milik sendiri).
+   Kembali ke tab Sheet: sheet Config, Panel, Inverter, dst. sudah terisi.
+5. **Deploy › New deployment** › ikon ⚙ › **Web app**. *Execute as*: **Me**. *Who has access*: **Anyone with Google account**
+   (atau **Anyone** bila surveyor tidak punya akun Google). **Deploy**, lalu salin URL `/exec`.
+6. Buka URL itu di HP/laptop: aplikasi tampil dan langsung terhubung ke Sheet. Simpan sebagai bookmark / *Add to Home screen*.
+
+Setelah kode berubah: tempel ulang kedua file, lalu **Deploy › Manage deployments › ✏ › Version: New version › Deploy**
+(URL tetap sama).
+
+(Alternatif tanpa tempel manual: `clasp` — `npx @google/clasp login`, `clasp create --type sheets`, salin `deploy/*` ke
+folder rootDir, `clasp push`.)
+
+### 2. Isi data
+
+Isi sheet:
    - `Panel` dan `Inverter`: **ganti fixture fiktif dengan produk nyata** (kolom `aktif` = `tidak` untuk menonaktifkan).
      `eff` boleh persen (97,5) atau fraksi (0,975).
    - `Wilayah`: PSH per lokasi dari Global Solar Atlas / PVGIS; `f1..f12` opsional (profil bulanan, dinormalkan otomatis).
@@ -47,15 +62,10 @@ rules engine (PASS / WARN / BLOCKER), sensitivitas, dan BoQ indikatif.
    - `Config`: ubah nilai dengan **menambah baris** key yang sama, `versi` lebih tinggi, dan `tanggal_berlaku`.
      Persen ditulis sebagai fraksi (3% = `0.03`).
    - `Kabel` (`harga_m`) dan `HargaBoQ`: harga untuk BoQ. Kosong = "perlu harga", tidak masuk total.
-5. (Opsional) **Project Settings › Script properties**: `API_TOKEN` = string acak. Web wajib mengisi token yang sama.
-6. **Deploy › New deployment › Web app**: *Execute as* **Me**, *Who has access* **Anyone**. Salin URL `/exec`.
-   Setelah mengubah kode, pakai **Manage deployments › Edit › New version** agar URL tetap sama.
+### 3. (Opsional) Hosting tambahan di GitHub Pages
 
-### 2. Web di GitHub
-
-1. Buat repo, push folder ini ke branch `main`.
-2. **Settings › Pages › Source: GitHub Actions**. Workflow akan menjalankan uji lalu mempublikasi `web/`.
-3. Buka situs → ⚙ → tempel URL `/exec` (+ token) → **Tes koneksi** → Simpan.
+Butuh GitHub Actions aktif di akun. **Settings › Pages › Source: GitHub Actions**, lalu tab **Actions › Uji & deploy web ›
+Run workflow**. Di situs `github.io` buka ⚙ → tempel URL `/exec` (+ token bila `API_TOKEN` diisi) → Simpan.
 
 Lokal: `npm run serve` lalu buka http://localhost:8765.
 
@@ -63,13 +73,15 @@ Lokal: `npm run serve` lalu buka http://localhost:8765.
 
 1. Edit `web/engine.js`.
 2. `npm test` (wajib lolos — toleransi PRD: integer persis, energi/kWp ±0,1%, rupiah ±0,5%, IRR ±0,1 poin).
-3. `npm run sync` → tempel ulang `Engine.gs` ke Apps Script (atau `clasp push`) → deploy versi baru.
+3. `npm run build` → tempel ulang `deploy/Code.gs` dan `deploy/Index.html` → deploy versi baru.
 4. Naikkan `?v=` di `web/index.html` dan `engineVersion` di engine agar cache browser ter-refresh dan survey tercatat versinya.
 
 ## Catatan keamanan
 
-Web App "Anyone" berarti siapa pun yang tahu URL bisa memanggil API. Isi `API_TOKEN` jika data pelanggan sensitif.
-Token disimpan di `localStorage` perangkat surveyor; ini bukan autentikasi penuh (di luar ruang lingkup v1).
+Siapa pun yang tahu URL `/exec` bisa membuka aplikasi dan menyimpan/membaca survey. Bagikan URL hanya ke surveyor.
+Pilih akses *Anyone with Google account* agar pengunjung minimal harus login Google. `API_TOKEN` (Script properties)
+hanya melindungi akses API dari luar (mis. versi GitHub Pages), bukan halaman yang dibuka dari URL `/exec` itu sendiri.
+Autentikasi penuh di luar ruang lingkup v1.
 
 ## Daftar verifikasi sebelum produksi (PRD bagian 12)
 
