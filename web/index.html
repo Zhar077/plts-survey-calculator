@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kalkulator Survey PLTS</title>
+  <meta name="description" content="Analisis cepat PLTS atap on-grid residensial: sizing, layout, inverter, kabel, produksi, ekonomi.">
+  <link rel="stylesheet" href="style.css?v=1.0.1">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">☀</span>
+      <div>
+        <h1>Kalkulator Survey PLTS</h1>
+        <p class="sub">Residensial on-grid · PRD v1</p>
+      </div>
+    </div>
+    <div class="conn" id="conn" title="Status koneksi ke Google Sheet">offline</div>
+    <button class="icon" id="btnSettings" aria-label="Pengaturan">⚙</button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="input" class="active">Input</button>
+    <button role="tab" data-tab="hasil">Hasil</button>
+    <button role="tab" data-tab="daftar">Daftar survey</button>
+  </nav>
+
+  <main>
+    <section id="tab-input" class="tab active">
+      <div id="banner" class="banner hidden"></div>
+      <form id="form" novalidate autocomplete="off"></form>
+      <div class="actions sticky">
+        <button type="button" class="ghost" id="btnNew">Survey baru</button>
+        <button type="button" class="ghost" id="btnExample">Isi contoh</button>
+        <span class="grow"></span>
+        <button type="button" class="secondary" id="btnCalc">Hitung</button>
+        <button type="button" class="primary" id="btnSave">Hitung &amp; simpan</button>
+      </div>
+    </section>
+
+    <section id="tab-hasil" class="tab">
+      <div id="result"><p class="empty">Belum ada hasil. Isi input lalu tekan <b>Hitung</b>.</p></div>
+      <div class="actions">
+        <button type="button" class="ghost" id="btnJson">Unduh JSON</button>
+        <span class="grow"></span>
+        <button type="button" class="secondary" id="btnPrint">Cetak / PDF</button>
+      </div>
+    </section>
+
+    <section id="tab-daftar" class="tab">
+      <div class="actions">
+        <input type="search" id="q" placeholder="Cari nama, alamat, ID…">
+        <button type="button" class="secondary" id="btnReload">Muat ulang</button>
+      </div>
+      <div id="list"><p class="empty">Hubungkan ke Google Sheet di ⚙ Pengaturan untuk melihat survey tersimpan.</p></div>
+    </section>
+  </main>
+
+  <dialog id="dlgSettings">
+    <form method="dialog" class="dlg">
+      <h2>Pengaturan</h2>
+      <label>URL Web App Apps Script
+        <input id="setUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec">
+      </label>
+      <label>Token API (opsional)
+        <input id="setToken" type="password" placeholder="Sama dengan Script property API_TOKEN">
+      </label>
+      <label>Nama surveyor
+        <input id="setSurveyor" type="text">
+      </label>
+      <p class="hint">Tanpa URL, aplikasi berjalan offline dengan konfigurasi default dan katalog <b>fixture fiktif</b> dari PRD.</p>
+      <div class="actions">
+        <button value="cancel" class="ghost">Batal</button>
+        <span class="grow"></span>
+        <button value="test" id="btnTest" class="secondary" type="button">Tes koneksi</button>
+        <button value="ok" class="primary">Simpan</button>
+      </div>
+      <p id="testOut" class="hint"></p>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="engine.js?v=1.0.1"></script>
+  <script src="app.js?v=1.0.1"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "plts-survey-calculator",
+  "version": "1.0.1",
+  "private": true,
+  "description": "Kalkulator survey PLTS atap residensial: Google Sheet + Apps Script + web statis",
+  "scripts": {
+    "test": "node tests/run-tests.js",
+    "sync": "node scripts/sync-engine.js",
+    "serve": "python -m http.server 8765 -d web"
+  }
+}
